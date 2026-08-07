@@ -226,3 +226,5 @@ yarn-error.log*
 .env.local
 dist/
 build/
+# PMO AI Assistant generated files
+generated/
