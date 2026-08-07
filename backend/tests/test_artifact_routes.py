@@ -1,12 +1,6 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-client = TestClient(app)
-
-
-def test_core_artifact_routes_are_registered() -> None:
+def test_core_artifact_routes_are_registered(
+    client,
+) -> None:
     response = client.get("/openapi.json")
 
     assert response.status_code == 200

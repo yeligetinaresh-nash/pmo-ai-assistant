@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from uuid import uuid4
+from contextlib import asynccontextmanager
 from app.ai.project_charter_generator import generate_project_charter
 from app.models.project_artifact import ProjectArtifact
 from app.exporters.wbs_docx import generate_wbs_docx
@@ -29,6 +30,7 @@ from fastapi import (
     HTTPException,
     UploadFile,
 )
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -76,11 +78,27 @@ from app.schemas.project import (
 )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    test_connection()
+    yield
+
+
 app = FastAPI(
     title="PMO AI Assistant API",
     version="1.0.0",
+    lifespan=lifespan,
 )
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ============================================================
 # Upload Configuration
@@ -96,11 +114,6 @@ MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 # ============================================================
 # Startup
 # ============================================================
-
-@app.on_event("startup")
-def startup():
-    test_connection()
-
 
 # ============================================================
 # Root API

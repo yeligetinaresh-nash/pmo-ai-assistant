@@ -1,12 +1,4 @@
-from fastapi.testclient import TestClient
-
-from app.main import app
-
-
-client = TestClient(app)
-
-
-def test_openapi_metadata() -> None:
+def test_openapi_metadata(client) -> None:
     response = client.get("/openapi.json")
 
     assert response.status_code == 200
