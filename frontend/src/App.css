@@ -812,3 +812,29 @@ button {
     font-size: 24px;
   }
 }
+.form-group select {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #111827;
+  font-size: 14px;
+}
+
+.form-group select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+.document-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+}
+
+.document-actions button {
+  flex: 1 1 100px;
+  min-width: 0;
+}

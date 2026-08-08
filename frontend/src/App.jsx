@@ -46,29 +46,50 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  // Create project
   const [showForm, setShowForm] = useState(false);
   const [projectName, setProjectName] = useState("");
   const [projectDescription, setProjectDescription] = useState("");
   const [creating, setCreating] = useState(false);
 
+  // Edit / delete project
+  const [editingProject, setEditingProject] = useState(null);
+  const [editProjectName, setEditProjectName] = useState("");
+  const [editProjectDescription, setEditProjectDescription] =
+    useState("");
+  const [editProjectStatus, setEditProjectStatus] =
+    useState("Draft");
+  const [savingProject, setSavingProject] = useState(false);
+  const [deletingProjectId, setDeletingProjectId] =
+    useState(null);
+
+  // Selected project / documents
   const [selectedProject, setSelectedProject] = useState(null);
   const [documents, setDocuments] = useState([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
-
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [deletingDocumentId, setDeletingDocumentId] = useState(null);
 
+  // Upload
   const [uploadFile, setUploadFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadMessage, setUploadMessage] = useState("");
   const [uploadKey, setUploadKey] = useState(0);
 
+  // BRD analysis
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisMessage, setAnalysisMessage] = useState("");
-  const [analysisStatus, setAnalysisStatus] = useState("unknown");
+  const [analysisStatus, setAnalysisStatus] =
+    useState("unknown");
 
+  // PMO artifacts
   const [artifactLoading, setArtifactLoading] = useState("");
   const [artifactMessage, setArtifactMessage] = useState("");
   const [artifactStatuses, setArtifactStatuses] = useState({});
+
+  // --------------------------------------------------
+  // LOAD PROJECTS
+  // --------------------------------------------------
 
   const loadProjects = async () => {
     setLoading(true);
@@ -94,6 +115,10 @@ function App() {
     loadProjects();
   }, []);
 
+  // --------------------------------------------------
+  // ANALYSIS STATUS
+  // --------------------------------------------------
+
   const loadAnalysisStatus = async (documentId) => {
     setAnalysisStatus("checking");
 
@@ -117,6 +142,10 @@ function App() {
       setAnalysisStatus("error");
     }
   };
+
+  // --------------------------------------------------
+  // ARTIFACT STATUS
+  // --------------------------------------------------
 
   const loadArtifactStatuses = async (documentId) => {
     const initialStatuses = {};
@@ -170,6 +199,10 @@ function App() {
     setArtifactStatuses(updatedStatuses);
   };
 
+  // --------------------------------------------------
+  // CREATE PROJECT
+  // --------------------------------------------------
+
   const handleCreateProject = async (event) => {
     event.preventDefault();
 
@@ -218,6 +251,175 @@ function App() {
     }
   };
 
+  // --------------------------------------------------
+  // EDIT PROJECT
+  // --------------------------------------------------
+
+  const handleStartEditProject = (project) => {
+    setEditingProject(project);
+
+    setEditProjectName(project.name || "");
+
+    setEditProjectDescription(
+      project.description || ""
+    );
+
+    setEditProjectStatus(
+      project.status || "Draft"
+    );
+
+    setShowForm(false);
+    setError("");
+  };
+
+  const handleCancelEditProject = () => {
+    setEditingProject(null);
+    setEditProjectName("");
+    setEditProjectDescription("");
+    setEditProjectStatus("Draft");
+    setError("");
+  };
+
+  const handleUpdateProject = async (event) => {
+    event.preventDefault();
+
+    if (!editingProject) {
+      return;
+    }
+
+    if (!editProjectName.trim()) {
+      setError("Project name is required.");
+      return;
+    }
+
+    setSavingProject(true);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/projects/${editingProject.id}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            name: editProjectName.trim(),
+            description:
+              editProjectDescription.trim() || null,
+            status: editProjectStatus,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => null);
+
+        throw new Error(
+          errorData?.detail ||
+            "Failed to update project"
+        );
+      }
+
+      const updatedProject =
+        await response.json();
+
+      setProjects((currentProjects) =>
+        currentProjects.map((project) =>
+          project.id === updatedProject.id
+            ? updatedProject
+            : project
+        )
+      );
+
+      if (
+        selectedProject &&
+        selectedProject.id === updatedProject.id
+      ) {
+        setSelectedProject(updatedProject);
+      }
+
+      setEditingProject(null);
+      setEditProjectName("");
+      setEditProjectDescription("");
+      setEditProjectStatus("Draft");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingProject(false);
+    }
+  };
+
+  // --------------------------------------------------
+  // DELETE PROJECT
+  // --------------------------------------------------
+
+  const handleDeleteProject = async (project) => {
+    const confirmed = window.confirm(
+      `Delete project "${project.name}"?\n\n` +
+        "This action is permanent and may remove related project data.\n\n" +
+        "Do you want to continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingProjectId(project.id);
+    setError("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/projects/${project.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => null);
+
+        throw new Error(
+          errorData?.detail ||
+            "Failed to delete project"
+        );
+      }
+
+      setProjects((currentProjects) =>
+        currentProjects.filter(
+          (currentProject) =>
+            currentProject.id !== project.id
+        )
+      );
+
+      if (
+        editingProject &&
+        editingProject.id === project.id
+      ) {
+        handleCancelEditProject();
+      }
+
+      if (
+        selectedProject &&
+        selectedProject.id === project.id
+      ) {
+        handleBackToDashboard();
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingProjectId(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // OPEN PROJECT
+  // --------------------------------------------------
+
   const handleOpenProject = async (project) => {
     setSelectedProject(project);
     setSelectedDocument(null);
@@ -238,7 +440,9 @@ function App() {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load project documents");
+        throw new Error(
+          "Failed to load project documents"
+        );
       }
 
       const data = await response.json();
@@ -249,6 +453,10 @@ function App() {
       setDocumentsLoading(false);
     }
   };
+
+  // --------------------------------------------------
+  // OPEN DOCUMENT
+  // --------------------------------------------------
 
   const handleOpenDocument = async (document) => {
     setSelectedDocument(document);
@@ -263,6 +471,78 @@ function App() {
     ]);
   };
 
+  // --------------------------------------------------
+  // DELETE DOCUMENT
+  // --------------------------------------------------
+
+  const handleDeleteDocument = async (document) => {
+    const confirmed = window.confirm(
+      `Delete document "${document.original_name}"?\n\n` +
+        "This action is permanent and may also remove its analysis and generated artifacts.\n\n" +
+        "Do you want to continue?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingDocumentId(document.id);
+    setError("");
+    setUploadMessage("");
+    setAnalysisMessage("");
+    setArtifactMessage("");
+
+    try {
+      const response = await fetch(
+        `${API_URL}/documents/${document.id}`,
+        {
+          method: "DELETE",
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => null);
+
+        throw new Error(
+          errorData?.detail ||
+            "Failed to delete document"
+        );
+      }
+
+      setDocuments((currentDocuments) =>
+        currentDocuments.filter(
+          (currentDocument) =>
+            currentDocument.id !== document.id
+        )
+      );
+
+      if (
+        selectedDocument &&
+        selectedDocument.id === document.id
+      ) {
+        setSelectedDocument(null);
+        setAnalysisStatus("unknown");
+        setArtifactStatuses({});
+        setAnalysisMessage("");
+        setArtifactMessage("");
+      }
+
+      setUploadMessage(
+        `${document.original_name} deleted successfully.`
+      );
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingDocumentId(null);
+    }
+  };
+
+  // --------------------------------------------------
+  // UPLOAD DOCUMENT
+  // --------------------------------------------------
+
   const handleUploadDocument = async (event) => {
     event.preventDefault();
 
@@ -272,26 +552,39 @@ function App() {
     }
 
     if (!uploadFile) {
-      setError("Please select a PDF or DOCX file.");
+      setError(
+        "Please select a PDF or DOCX file."
+      );
       return;
     }
 
-    const allowedExtensions = [".pdf", ".docx"];
-    const fileName = uploadFile.name.toLowerCase();
+    const allowedExtensions = [
+      ".pdf",
+      ".docx",
+    ];
 
-    const isAllowed = allowedExtensions.some((extension) =>
-      fileName.endsWith(extension)
-    );
+    const fileName =
+      uploadFile.name.toLowerCase();
+
+    const isAllowed =
+      allowedExtensions.some((extension) =>
+        fileName.endsWith(extension)
+      );
 
     if (!isAllowed) {
-      setError("Only PDF and DOCX files are allowed.");
+      setError(
+        "Only PDF and DOCX files are allowed."
+      );
       return;
     }
 
-    const maxSize = 10 * 1024 * 1024;
+    const maxSize =
+      10 * 1024 * 1024;
 
     if (uploadFile.size > maxSize) {
-      setError("File size cannot exceed 10 MB.");
+      setError(
+        "File size cannot exceed 10 MB."
+      );
       return;
     }
 
@@ -301,7 +594,11 @@ function App() {
 
     try {
       const formData = new FormData();
-      formData.append("file", uploadFile);
+
+      formData.append(
+        "file",
+        uploadFile
+      );
 
       const response = await fetch(
         `${API_URL}/projects/${selectedProject.id}/documents`,
@@ -312,14 +609,19 @@ function App() {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData =
+          await response
+            .json()
+            .catch(() => null);
 
         throw new Error(
-          errorData?.detail || "Failed to upload document"
+          errorData?.detail ||
+            "Failed to upload document"
         );
       }
 
-      const newDocument = await response.json();
+      const newDocument =
+        await response.json();
 
       setDocuments((currentDocuments) => [
         newDocument,
@@ -327,7 +629,11 @@ function App() {
       ]);
 
       setUploadFile(null);
-      setUploadKey((currentKey) => currentKey + 1);
+
+      setUploadKey(
+        (currentKey) =>
+          currentKey + 1
+      );
 
       setUploadMessage(
         `${newDocument.original_name} uploaded successfully.`
@@ -339,9 +645,15 @@ function App() {
     }
   };
 
+  // --------------------------------------------------
+  // ANALYZE BRD
+  // --------------------------------------------------
+
   const handleAnalyzeDocument = async () => {
     if (!selectedDocument) {
-      setError("Please open a document first.");
+      setError(
+        "Please open a document first."
+      );
       return;
     }
 
@@ -350,9 +662,10 @@ function App() {
     setAnalysisMessage("");
 
     try {
-      const cachedResponse = await fetch(
-        `${API_URL}/documents/${selectedDocument.id}/analysis`
-      );
+      const cachedResponse =
+        await fetch(
+          `${API_URL}/documents/${selectedDocument.id}/analysis`
+        );
 
       if (cachedResponse.ok) {
         setAnalysisStatus("cached");
@@ -364,10 +677,13 @@ function App() {
         return;
       }
 
-      if (cachedResponse.status !== 404) {
-        const errorData = await cachedResponse
-          .json()
-          .catch(() => null);
+      if (
+        cachedResponse.status !== 404
+      ) {
+        const errorData =
+          await cachedResponse
+            .json()
+            .catch(() => null);
 
         throw new Error(
           errorData?.detail ||
@@ -375,35 +691,46 @@ function App() {
         );
       }
 
-      setAnalysisStatus("not-analyzed");
-
-      const confirmed = window.confirm(
-        "No cached BRD analysis exists for this document.\n\n" +
-          "Analyzing this BRD will call the OpenAI API and may incur a small cost.\n\n" +
-          "Do you want to continue?"
+      setAnalysisStatus(
+        "not-analyzed"
       );
 
+      const confirmed =
+        window.confirm(
+          "No cached BRD analysis exists for this document.\n\n" +
+            "Analyzing this BRD will call the OpenAI API and may incur a small cost.\n\n" +
+            "Do you want to continue?"
+        );
+
       if (!confirmed) {
-        setAnalysisMessage("BRD analysis cancelled.");
+        setAnalysisMessage(
+          "BRD analysis cancelled."
+        );
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/documents/${selectedDocument.id}/analyze?force=false`,
-        {
-          method: "POST",
-        }
-      );
+      const response =
+        await fetch(
+          `${API_URL}/documents/${selectedDocument.id}/analyze?force=false`,
+          {
+            method: "POST",
+          }
+        );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData =
+          await response
+            .json()
+            .catch(() => null);
 
         throw new Error(
-          errorData?.detail || "Failed to analyze document"
+          errorData?.detail ||
+            "Failed to analyze document"
         );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
       setAnalysisStatus("cached");
 
@@ -420,36 +747,51 @@ function App() {
     }
   };
 
+  // --------------------------------------------------
+  // GENERATE / LOAD ARTIFACT
+  // --------------------------------------------------
+
   const handleGenerateArtifact = async (
     artifactPath,
     artifactName
   ) => {
     if (!selectedDocument) {
-      setError("Please open a document first.");
+      setError(
+        "Please open a document first."
+      );
       return;
     }
 
-    if (analysisStatus !== "cached") {
+    if (
+      analysisStatus !== "cached"
+    ) {
       setError(
         "Please analyze the BRD before generating PMO artifacts."
       );
       return;
     }
 
-    setArtifactLoading(artifactPath);
+    setArtifactLoading(
+      artifactPath
+    );
+
     setArtifactMessage("");
     setError("");
 
     try {
-      const cachedResponse = await fetch(
-        `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}`
-      );
+      const cachedResponse =
+        await fetch(
+          `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}`
+        );
 
       if (cachedResponse.ok) {
-        setArtifactStatuses((current) => ({
-          ...current,
-          [artifactPath]: "cached",
-        }));
+        setArtifactStatuses(
+          (current) => ({
+            ...current,
+            [artifactPath]:
+              "cached",
+          })
+        );
 
         setArtifactMessage(
           `${artifactName} loaded from cache successfully.`
@@ -458,10 +800,14 @@ function App() {
         return;
       }
 
-      if (cachedResponse.status !== 404) {
-        const errorData = await cachedResponse
-          .json()
-          .catch(() => null);
+      if (
+        cachedResponse.status !==
+        404
+      ) {
+        const errorData =
+          await cachedResponse
+            .json()
+            .catch(() => null);
 
         throw new Error(
           errorData?.detail ||
@@ -469,16 +815,20 @@ function App() {
         );
       }
 
-      setArtifactStatuses((current) => ({
-        ...current,
-        [artifactPath]: "not-generated",
-      }));
-
-      const confirmed = window.confirm(
-        `${artifactName} is not cached for this document.\n\n` +
-          "Generating it will call the OpenAI API and may incur a small cost.\n\n" +
-          "Do you want to continue?"
+      setArtifactStatuses(
+        (current) => ({
+          ...current,
+          [artifactPath]:
+            "not-generated",
+        })
       );
+
+      const confirmed =
+        window.confirm(
+          `${artifactName} is not cached for this document.\n\n` +
+            "Generating it will call the OpenAI API and may incur a small cost.\n\n" +
+            "Do you want to continue?"
+        );
 
       if (!confirmed) {
         setArtifactMessage(
@@ -487,15 +837,19 @@ function App() {
         return;
       }
 
-      const response = await fetch(
-        `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}?force=false`,
-        {
-          method: "POST",
-        }
-      );
+      const response =
+        await fetch(
+          `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}?force=false`,
+          {
+            method: "POST",
+          }
+        );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => null);
+        const errorData =
+          await response
+            .json()
+            .catch(() => null);
 
         throw new Error(
           errorData?.detail ||
@@ -503,12 +857,16 @@ function App() {
         );
       }
 
-      const data = await response.json();
+      const data =
+        await response.json();
 
-      setArtifactStatuses((current) => ({
-        ...current,
-        [artifactPath]: "cached",
-      }));
+      setArtifactStatuses(
+        (current) => ({
+          ...current,
+          [artifactPath]:
+            "cached",
+        })
+      );
 
       setArtifactMessage(
         data.cached
@@ -516,16 +874,23 @@ function App() {
           : `${artifactName} generated successfully.`
       );
     } catch (err) {
-      setArtifactStatuses((current) => ({
-        ...current,
-        [artifactPath]: "error",
-      }));
+      setArtifactStatuses(
+        (current) => ({
+          ...current,
+          [artifactPath]:
+            "error",
+        })
+      );
 
       setError(err.message);
     } finally {
       setArtifactLoading("");
     }
   };
+
+  // --------------------------------------------------
+  // BACK TO DASHBOARD
+  // --------------------------------------------------
 
   const handleBackToDashboard = () => {
     setSelectedProject(null);
@@ -544,7 +909,13 @@ function App() {
     setError("");
   };
 
-  const handleDownloadDocument = (documentId) => {
+  // --------------------------------------------------
+  // DOWNLOAD
+  // --------------------------------------------------
+
+  const handleDownloadDocument = (
+    documentId
+  ) => {
     window.open(
       `${API_URL}/documents/${documentId}/download`,
       "_blank"
@@ -561,67 +932,115 @@ function App() {
     );
   };
 
-  const getArtifactStatusLabel = (artifactPath) => {
-    const status = artifactStatuses[artifactPath];
+  // --------------------------------------------------
+  // STATUS LABEL HELPERS
+  // --------------------------------------------------
 
-    if (status === "checking") {
+  const getArtifactStatusLabel = (
+    artifactPath
+  ) => {
+    const status =
+      artifactStatuses[
+        artifactPath
+      ];
+
+    if (
+      status === "checking"
+    ) {
       return "Checking...";
     }
 
-    if (status === "cached") {
+    if (
+      status === "cached"
+    ) {
       return "Cached";
     }
 
-    if (status === "not-generated") {
+    if (
+      status ===
+      "not-generated"
+    ) {
       return "Not Generated";
     }
 
-    if (status === "error") {
+    if (
+      status === "error"
+    ) {
       return "Status Error";
     }
 
     return "Unknown";
   };
 
-  const getArtifactStatusClass = (artifactPath) => {
-    const status = artifactStatuses[artifactPath];
+  const getArtifactStatusClass = (
+    artifactPath
+  ) => {
+    const status =
+      artifactStatuses[
+        artifactPath
+      ];
 
-    if (status === "cached") {
+    if (
+      status === "cached"
+    ) {
       return "artifact-status cached";
     }
 
-    if (status === "not-generated") {
+    if (
+      status ===
+      "not-generated"
+    ) {
       return "artifact-status not-generated";
     }
 
-    if (status === "error") {
+    if (
+      status === "error"
+    ) {
       return "artifact-status status-error";
     }
 
     return "artifact-status checking";
   };
 
-  const getAnalysisStatusLabel = () => {
-    if (analysisStatus === "checking") {
-      return "Checking Analysis...";
-    }
+  const getAnalysisStatusLabel =
+    () => {
+      if (
+        analysisStatus ===
+        "checking"
+      ) {
+        return "Checking Analysis...";
+      }
 
-    if (analysisStatus === "cached") {
-      return "BRD Analysis: Cached";
-    }
+      if (
+        analysisStatus ===
+        "cached"
+      ) {
+        return "BRD Analysis: Cached";
+      }
 
-    if (analysisStatus === "not-analyzed") {
-      return "BRD Analysis: Not Analyzed";
-    }
+      if (
+        analysisStatus ===
+        "not-analyzed"
+      ) {
+        return "BRD Analysis: Not Analyzed";
+      }
 
-    if (analysisStatus === "error") {
-      return "BRD Analysis: Status Error";
-    }
+      if (
+        analysisStatus ===
+        "error"
+      ) {
+        return "BRD Analysis: Status Error";
+      }
 
-    return "BRD Analysis: Unknown";
-  };
+      return "BRD Analysis: Unknown";
+    };
 
-  const totalProjects = projects.length;
+  const totalProjects =
+    projects.length;
+
+  // ==================================================
+  // PROJECT WORKSPACE
+  // ==================================================
 
   if (selectedProject) {
     return (
@@ -629,14 +1048,19 @@ function App() {
         <aside className="sidebar">
           <div className="brand">
             <h2>PMO AI</h2>
-            <span>Assistant</span>
+            <span>
+              Assistant
+            </span>
           </div>
 
           <nav>
             <a
               href="#"
-              onClick={(event) => {
+              onClick={(
+                event
+              ) => {
                 event.preventDefault();
+
                 handleBackToDashboard();
               }}
             >
@@ -646,28 +1070,44 @@ function App() {
             <a
               className="active"
               href="#"
-              onClick={(event) => event.preventDefault()}
+              onClick={(
+                event
+              ) =>
+                event.preventDefault()
+              }
             >
               Project Workspace
             </a>
 
             <a
               href="#"
-              onClick={(event) => event.preventDefault()}
+              onClick={(
+                event
+              ) =>
+                event.preventDefault()
+              }
             >
               Documents
             </a>
 
             <a
               href="#"
-              onClick={(event) => event.preventDefault()}
+              onClick={(
+                event
+              ) =>
+                event.preventDefault()
+              }
             >
               AI Artifacts
             </a>
 
             <a
               href="#"
-              onClick={(event) => event.preventDefault()}
+              onClick={(
+                event
+              ) =>
+                event.preventDefault()
+              }
             >
               Reports
             </a>
@@ -680,12 +1120,18 @@ function App() {
               <button
                 type="button"
                 className="back-button"
-                onClick={handleBackToDashboard}
+                onClick={
+                  handleBackToDashboard
+                }
               >
                 ← Back to Dashboard
               </button>
 
-              <h1>{selectedProject.name}</h1>
+              <h1>
+                {
+                  selectedProject.name
+                }
+              </h1>
 
               <p>
                 {selectedProject.description ||
@@ -694,7 +1140,8 @@ function App() {
             </div>
 
             <span className="badge">
-              {selectedProject.status || "Draft"}
+              {selectedProject.status ||
+                "Draft"}
             </span>
           </header>
 
@@ -707,47 +1154,65 @@ function App() {
           <section className="workspace">
             <div className="section-header">
               <div>
-                <h2>Project Documents</h2>
+                <h2>
+                  Project Documents
+                </h2>
 
                 <p>
-                  Select a BRD or project document to access
-                  its PMO artifacts.
+                  Select a BRD or project document to access its PMO artifacts.
                 </p>
               </div>
             </div>
 
             <form
               className="upload-panel"
-              onSubmit={handleUploadDocument}
+              onSubmit={
+                handleUploadDocument
+              }
             >
               <div>
-                <h3>Upload BRD / Project Document</h3>
+                <h3>
+                  Upload BRD / Project Document
+                </h3>
 
                 <p>
-                  Supported formats: PDF and DOCX.
-                  Maximum size: 10 MB.
+                  Supported formats: PDF and DOCX. Maximum size: 10 MB.
                 </p>
               </div>
 
               <div className="upload-controls">
                 <input
-                  key={uploadKey}
+                  key={
+                    uploadKey
+                  }
                   type="file"
                   accept=".pdf,.docx"
-                  onChange={(event) => {
+                  onChange={(
+                    event
+                  ) => {
                     setUploadFile(
-                      event.target.files?.[0] || null
+                      event
+                        .target
+                        .files?.[0] ||
+                        null
                     );
 
-                    setUploadMessage("");
-                    setError("");
+                    setUploadMessage(
+                      ""
+                    );
+
+                    setError(
+                      ""
+                    );
                   }}
                 />
 
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={uploading}
+                  disabled={
+                    uploading
+                  }
                 >
                   {uploading
                     ? "Uploading..."
@@ -757,87 +1222,134 @@ function App() {
 
               {uploadFile && (
                 <p className="selected-file">
-                  Selected: {uploadFile.name}
+                  Selected:{" "}
+                  {
+                    uploadFile.name
+                  }
                 </p>
               )}
 
               {uploadMessage && (
                 <p className="success-message">
-                  {uploadMessage}
+                  {
+                    uploadMessage
+                  }
                 </p>
               )}
             </form>
 
             {documentsLoading && (
-              <p>Loading documents...</p>
+              <p>
+                Loading documents...
+              </p>
             )}
 
             {!documentsLoading &&
-              documents.length === 0 && (
+              documents.length ===
+                0 && (
                 <div className="empty-state">
-                  <h3>No documents found</h3>
+                  <h3>
+                    No documents found
+                  </h3>
 
                   <p>
-                    Upload a BRD to begin AI analysis and
-                    artifact generation.
+                    Upload a BRD to begin AI analysis and artifact generation.
                   </p>
                 </div>
               )}
 
             <div className="documents-grid">
-              {documents.map((document) => (
-                <div
-                  className={`document-card ${
-                    selectedDocument?.id === document.id
-                      ? "selected-document"
-                      : ""
-                  }`}
-                  key={document.id}
-                >
-                  <div className="document-type">
-                    {document.file_type?.toUpperCase() ||
-                      "FILE"}
-                  </div>
+              {documents.map(
+                (document) => (
+                  <div
+                    className={`document-card ${
+                      selectedDocument?.id ===
+                      document.id
+                        ? "selected-document"
+                        : ""
+                    }`}
+                    key={
+                      document.id
+                    }
+                  >
+                    <div className="document-type">
+                      {document.file_type?.toUpperCase() ||
+                        "FILE"}
+                    </div>
 
-                  <h3>{document.original_name}</h3>
-
-                  <p>
-                    Document ID: {document.id}
-                  </p>
-
-                  <p>
-                    Size:{" "}
-                    {document.file_size
-                      ? (
-                          document.file_size / 1024
-                        ).toFixed(1)
-                      : "0.0"}{" "}
-                    KB
-                  </p>
-
-                  <div className="document-actions">
-                    <button
-                      type="button"
-                      className="primary-button"
-                      onClick={() =>
-                        handleOpenDocument(document)
+                    <h3>
+                      {
+                        document.original_name
                       }
-                    >
-                      Open Document
-                    </button>
+                    </h3>
 
-                    <button
-                      type="button"
-                      className="secondary-button"
-                      onClick={() =>
-                        handleDownloadDocument(document.id)
+                    <p>
+                      Document ID:{" "}
+                      {
+                        document.id
                       }
-                    >
-                      Download
-                    </button>
+                    </p>
+
+                    <p>
+                      Size:{" "}
+                      {document.file_size
+                        ? (
+                            document.file_size /
+                            1024
+                          ).toFixed(
+                            1
+                          )
+                        : "0.0"}{" "}
+                      KB
+                    </p>
+
+                    <div className="document-actions">
+                      <button
+                        type="button"
+                        className="primary-button"
+                        onClick={() =>
+                          handleOpenDocument(
+                            document
+                          )
+                        }
+                      >
+                        Open Document
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          handleDownloadDocument(
+                            document.id
+                          )
+                        }
+                      >
+                        Download
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={
+                          deletingDocumentId ===
+                          document.id
+                        }
+                        onClick={() =>
+                          handleDeleteDocument(
+                            document
+                          )
+                        }
+                      >
+                        {deletingDocumentId ===
+                        document.id
+                          ? "Deleting..."
+                          : "Delete"}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </section>
 
@@ -845,45 +1357,60 @@ function App() {
             <section className="workspace artifact-workspace">
               <div className="section-header">
                 <div>
-                  <h2>PMO AI Artifacts</h2>
+                  <h2>
+                    PMO AI Artifacts
+                  </h2>
 
                   <p>
                     Document:{" "}
                     <strong>
-                      {selectedDocument.original_name}
+                      {
+                        selectedDocument.original_name
+                      }
                     </strong>
                   </p>
 
                   <p>
-                    Document ID: {selectedDocument.id}
+                    Document ID:{" "}
+                    {
+                      selectedDocument.id
+                    }
                   </p>
 
                   <div
                     className={`analysis-status ${analysisStatus}`}
                   >
-                    {getAnalysisStatusLabel()}
+                    {
+                      getAnalysisStatusLabel()
+                    }
                   </div>
 
                   <div className="analysis-actions">
                     <button
                       type="button"
                       className="primary-button"
-                      onClick={handleAnalyzeDocument}
+                      onClick={
+                        handleAnalyzeDocument
+                      }
                       disabled={
                         analyzing ||
-                        analysisStatus === "checking"
+                        analysisStatus ===
+                          "checking"
                       }
                     >
                       {analyzing
                         ? "Analyzing BRD..."
-                        : analysisStatus === "cached"
+                        : analysisStatus ===
+                            "cached"
                           ? "Load Cached Analysis"
                           : "Analyze BRD"}
                     </button>
 
                     {analysisMessage && (
                       <span className="analysis-success">
-                        {analysisMessage}
+                        {
+                          analysisMessage
+                        }
                       </span>
                     )}
                   </div>
@@ -891,79 +1418,113 @@ function App() {
               </div>
 
               <div className="artifact-grid">
-                {artifacts.map((artifact, index) => (
-                  <div
-                    className="artifact-card"
-                    key={artifact.path}
-                  >
-                    <span>
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-
+                {artifacts.map(
+                  (
+                    artifact,
+                    index
+                  ) => (
                     <div
-                      className={getArtifactStatusClass(
+                      className="artifact-card"
+                      key={
                         artifact.path
-                      )}
+                      }
                     >
-                      {getArtifactStatusLabel(
-                        artifact.path
-                      )}
-                    </div>
+                      <span>
+                        {String(
+                          index +
+                            1
+                        ).padStart(
+                          2,
+                          "0"
+                        )}
+                      </span>
 
-                    <h3>{artifact.name}</h3>
-
-                    <p>{artifact.description}</p>
-
-                    <div className="artifact-actions">
-                      <button
-                        type="button"
-                        className="primary-button"
-                        onClick={() =>
-                          handleGenerateArtifact(
-                            artifact.path,
-                            artifact.name
-                          )
-                        }
-                        disabled={
-                          artifactLoading === artifact.path ||
-                          artifactStatuses[artifact.path] ===
-                            "checking" ||
-                          analysisStatus !== "cached"
-                        }
+                      <div
+                        className={getArtifactStatusClass(
+                          artifact.path
+                        )}
                       >
-                        {artifactLoading === artifact.path
-                          ? "Loading..."
-                          : artifactStatuses[
-                                artifact.path
-                              ] === "cached"
-                            ? "Load Cached"
-                            : "Generate"}
-                      </button>
+                        {getArtifactStatusLabel(
+                          artifact.path
+                        )}
+                      </div>
 
-                      <button
-                        type="button"
-                        className="artifact-download-button"
-                        onClick={() =>
-                          handleDownloadArtifact(
-                            selectedDocument.id,
-                            artifact.path
-                          )
+                      <h3>
+                        {
+                          artifact.name
                         }
-                        disabled={
-                          artifactStatuses[artifact.path] !==
-                          "cached"
+                      </h3>
+
+                      <p>
+                        {
+                          artifact.description
                         }
-                      >
-                        Download Artifact
-                      </button>
+                      </p>
+
+                      <div className="artifact-actions">
+                        <button
+                          type="button"
+                          className="primary-button"
+                          onClick={() =>
+                            handleGenerateArtifact(
+                              artifact.path,
+                              artifact.name
+                            )
+                          }
+                          disabled={
+                            artifactLoading ===
+                              artifact.path ||
+                            artifactStatuses[
+                              artifact
+                                .path
+                            ] ===
+                              "checking" ||
+                            analysisStatus !==
+                              "cached"
+                          }
+                        >
+                          {artifactLoading ===
+                          artifact.path
+                            ? "Loading..."
+                            : artifactStatuses[
+                                  artifact
+                                    .path
+                                ] ===
+                                "cached"
+                              ? "Load Cached"
+                              : "Generate"}
+                        </button>
+
+                        <button
+                          type="button"
+                          className="artifact-download-button"
+                          onClick={() =>
+                            handleDownloadArtifact(
+                              selectedDocument.id,
+                              artifact.path
+                            )
+                          }
+                          disabled={
+                            artifactStatuses[
+                              artifact
+                                .path
+                            ] !==
+                            "cached"
+                          }
+                        >
+                          Download Artifact
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
 
               {artifactMessage && (
                 <p className="analysis-success">
-                  {artifactMessage}
+                  {
+                    artifactMessage
+                  }
                 </p>
               )}
             </section>
@@ -973,54 +1534,87 @@ function App() {
     );
   }
 
+  // ==================================================
+  // DASHBOARD
+  // ==================================================
+
   return (
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h2>PMO AI</h2>
-          <span>Assistant</span>
+          <h2>
+            PMO AI
+          </h2>
+
+          <span>
+            Assistant
+          </span>
         </div>
 
         <nav>
           <a
             className="active"
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             Dashboard
           </a>
 
           <a
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             Projects
           </a>
 
           <a
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             Documents
           </a>
 
           <a
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             AI Artifacts
           </a>
 
           <a
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             Reports
           </a>
 
           <a
             href="#"
-            onClick={(event) => event.preventDefault()}
+            onClick={(
+              event
+            ) =>
+              event.preventDefault()
+            }
           >
             Settings
           </a>
@@ -1030,7 +1624,9 @@ function App() {
       <main className="main-content">
         <header className="topbar">
           <div>
-            <h1>PMO AI Assistant</h1>
+            <h1>
+              PMO AI Assistant
+            </h1>
 
             <p>
               AI-powered project management workspace
@@ -1041,8 +1637,17 @@ function App() {
             type="button"
             className="primary-button"
             onClick={() => {
-              setShowForm(true);
-              setError("");
+              setShowForm(
+                true
+              );
+
+              setEditingProject(
+                null
+              );
+
+              setError(
+                ""
+              );
             }}
           >
             + New Project
@@ -1051,49 +1656,75 @@ function App() {
 
         <section className="stats-grid">
           <div className="stat-card">
-            <span>Total Projects</span>
+            <span>
+              Total Projects
+            </span>
 
             <strong>
-              {loading ? "..." : totalProjects}
+              {loading
+                ? "..."
+                : totalProjects}
             </strong>
 
-            <p>Projects from PostgreSQL</p>
+            <p>
+              Projects from PostgreSQL
+            </p>
           </div>
 
           <div className="stat-card">
-            <span>Backend</span>
+            <span>
+              Backend
+            </span>
 
             <strong className="status">
-              {error ? "Check" : "Healthy"}
+              {error
+                ? "Check"
+                : "Healthy"}
             </strong>
 
-            <p>FastAPI service</p>
+            <p>
+              FastAPI service
+            </p>
           </div>
 
           <div className="stat-card">
-            <span>PMO Artifacts</span>
+            <span>
+              PMO Artifacts
+            </span>
 
-            <strong>7</strong>
+            <strong>
+              7
+            </strong>
 
-            <p>Supported artifact types</p>
+            <p>
+              Supported artifact types
+            </p>
           </div>
 
           <div className="stat-card">
-            <span>Platform</span>
+            <span>
+              Platform
+            </span>
 
             <strong className="status">
               Active
             </strong>
 
-            <p>PMO AI workspace</p>
+            <p>
+              PMO AI workspace
+            </p>
           </div>
         </section>
+
+        {/* CREATE PROJECT FORM */}
 
         {showForm && (
           <section className="create-project-panel">
             <div className="form-header">
               <div>
-                <h2>Create New Project</h2>
+                <h2>
+                  Create New Project
+                </h2>
 
                 <p>
                   Add a project to the workspace.
@@ -1104,15 +1735,24 @@ function App() {
                 type="button"
                 className="close-button"
                 onClick={() => {
-                  setShowForm(false);
-                  setError("");
+                  setShowForm(
+                    false
+                  );
+
+                  setError(
+                    ""
+                  );
                 }}
               >
                 ×
               </button>
             </div>
 
-            <form onSubmit={handleCreateProject}>
+            <form
+              onSubmit={
+                handleCreateProject
+              }
+            >
               <div className="form-group">
                 <label htmlFor="projectName">
                   Project Name
@@ -1121,9 +1761,16 @@ function App() {
                 <input
                   id="projectName"
                   type="text"
-                  value={projectName}
-                  onChange={(event) =>
-                    setProjectName(event.target.value)
+                  value={
+                    projectName
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setProjectName(
+                      event.target
+                        .value
+                    )
                   }
                   placeholder="Enter project name"
                 />
@@ -1136,10 +1783,15 @@ function App() {
 
                 <textarea
                   id="projectDescription"
-                  value={projectDescription}
-                  onChange={(event) =>
+                  value={
+                    projectDescription
+                  }
+                  onChange={(
+                    event
+                  ) =>
                     setProjectDescription(
-                      event.target.value
+                      event.target
+                        .value
                     )
                   }
                   placeholder="Enter project description"
@@ -1152,8 +1804,13 @@ function App() {
                   type="button"
                   className="secondary-button"
                   onClick={() => {
-                    setShowForm(false);
-                    setError("");
+                    setShowForm(
+                      false
+                    );
+
+                    setError(
+                      ""
+                    );
                   }}
                 >
                   Cancel
@@ -1162,11 +1819,158 @@ function App() {
                 <button
                   type="submit"
                   className="primary-button"
-                  disabled={creating}
+                  disabled={
+                    creating
+                  }
                 >
                   {creating
                     ? "Creating..."
                     : "Create Project"}
+                </button>
+              </div>
+            </form>
+          </section>
+        )}
+
+        {/* EDIT PROJECT FORM */}
+
+        {editingProject && (
+          <section className="create-project-panel">
+            <div className="form-header">
+              <div>
+                <h2>
+                  Edit Project
+                </h2>
+
+                <p>
+                  Update project name, description and status.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="close-button"
+                onClick={
+                  handleCancelEditProject
+                }
+              >
+                ×
+              </button>
+            </div>
+
+            <form
+              onSubmit={
+                handleUpdateProject
+              }
+            >
+              <div className="form-group">
+                <label htmlFor="editProjectName">
+                  Project Name
+                </label>
+
+                <input
+                  id="editProjectName"
+                  type="text"
+                  value={
+                    editProjectName
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setEditProjectName(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Enter project name"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editProjectDescription">
+                  Description
+                </label>
+
+                <textarea
+                  id="editProjectDescription"
+                  value={
+                    editProjectDescription
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setEditProjectDescription(
+                      event.target
+                        .value
+                    )
+                  }
+                  placeholder="Enter project description"
+                  rows="4"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="editProjectStatus">
+                  Status
+                </label>
+
+                <select
+                  id="editProjectStatus"
+                  value={
+                    editProjectStatus
+                  }
+                  onChange={(
+                    event
+                  ) =>
+                    setEditProjectStatus(
+                      event.target
+                        .value
+                    )
+                  }
+                >
+                  <option value="Draft">
+                    Draft
+                  </option>
+
+                  <option value="In Progress">
+                    In Progress
+                  </option>
+
+                  <option value="On Hold">
+                    On Hold
+                  </option>
+
+                  <option value="Completed">
+                    Completed
+                  </option>
+
+                  <option value="Cancelled">
+                    Cancelled
+                  </option>
+                </select>
+              </div>
+
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={
+                    handleCancelEditProject
+                  }
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={
+                    savingProject
+                  }
+                >
+                  {savingProject
+                    ? "Saving..."
+                    : "Save Changes"}
                 </button>
               </div>
             </form>
@@ -1182,7 +1986,9 @@ function App() {
         <section className="workspace">
           <div className="section-header">
             <div>
-              <h2>Project Workspace</h2>
+              <h2>
+                Project Workspace
+              </h2>
 
               <p>
                 Projects loaded directly from PostgreSQL.
@@ -1191,51 +1997,101 @@ function App() {
           </div>
 
           {loading && (
-            <p>Loading projects...</p>
-          )}
-
-          {!loading && projects.length === 0 && (
-            <div className="empty-state">
-              <h3>No projects found</h3>
-
-              <p>
-                Create a project to begin using PMO AI.
-              </p>
-            </div>
+            <p>
+              Loading projects...
+            </p>
           )}
 
           {!loading &&
-            projects.map((project) => (
-              <div
-                className="project-card"
-                key={project.id}
-              >
-                <div className="project-header">
-                  <div>
-                    <span className="badge">
-                      {project.status || "Draft"}
-                    </span>
+            projects.length ===
+              0 && (
+              <div className="empty-state">
+                <h3>
+                  No projects found
+                </h3>
 
-                    <h3>{project.name}</h3>
-
-                    <p>
-                      {project.description ||
-                        "No project description available."}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="secondary-button"
-                    onClick={() =>
-                      handleOpenProject(project)
-                    }
-                  >
-                    Open Project
-                  </button>
-                </div>
+                <p>
+                  Create a project to begin using PMO AI.
+                </p>
               </div>
-            ))}
+            )}
+
+          {!loading &&
+            projects.map(
+              (project) => (
+                <div
+                  className="project-card"
+                  key={
+                    project.id
+                  }
+                >
+                  <div className="project-header">
+                    <div>
+                      <span className="badge">
+                        {project.status ||
+                          "Draft"}
+                      </span>
+
+                      <h3>
+                        {
+                          project.name
+                        }
+                      </h3>
+
+                      <p>
+                        {project.description ||
+                          "No project description available."}
+                      </p>
+                    </div>
+
+                    <div className="form-actions">
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          handleOpenProject(
+                            project
+                          )
+                        }
+                      >
+                        Open Project
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        onClick={() =>
+                          handleStartEditProject(
+                            project
+                          )
+                        }
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        className="secondary-button"
+                        disabled={
+                          deletingProjectId ===
+                          project.id
+                        }
+                        onClick={() =>
+                          handleDeleteProject(
+                            project
+                          )
+                        }
+                      >
+                        {deletingProjectId ===
+                        project.id
+                          ? "Deleting..."
+                          : "Delete"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )
+            )}
         </section>
       </main>
     </div>
