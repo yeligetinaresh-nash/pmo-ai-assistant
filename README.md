@@ -19,7 +19,27 @@ The application allows users to:
 The system is designed with a cost-safety approach so that existing AI outputs are reused wherever possible before making a new OpenAI API request.
 
 ---
+## Demo Preview
 
+### Login
+![Login Screen](docs/screenshots/01_login.png)
+
+### Project Dashboard
+![Project Dashboard](docs/screenshots/02_dashboard.png)
+
+### Cached BRD Analysis
+![Cached BRD Analysis](docs/screenshots/03_brd_cached.png)
+
+### Generated Project Artifact
+![Project Artifact](docs/screenshots/04_project_artifact.png)
+
+### Governance Artifact
+![Governance Artifact](docs/screenshots/05_governance_artifact.png)
+
+### Automated Test Result
+![46 Tests Passed](docs/screenshots/06_tests_46_passed.png)
+
+---
 ## Key Features
 
 ### Project Management
