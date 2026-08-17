@@ -2,6 +2,12 @@ import os
 from pathlib import Path
 from uuid import uuid4
 from contextlib import asynccontextmanager
+from app.api.auth import router as auth_router, get_current_user
+from app.models.user import User
+from app.database.base import Base
+from app.core.logging_config import configure_logging
+from app.core.middleware import request_logging_middleware
+from app.core.error_handlers import register_exception_handlers
 from app.ai.project_charter_generator import generate_project_charter
 from app.models.project_artifact import ProjectArtifact
 from app.exporters.wbs_docx import generate_wbs_docx
@@ -67,7 +73,7 @@ from app.crud.project import (
     get_projects,
     update_project,
 )
-from app.database.connection import get_db, test_connection
+from app.database.connection import engine, get_db, test_connection
 from app.models.document import UploadedDocument
 from app.models.document_analysis import DocumentAnalysis
 from app.schemas.document import DocumentResponse
@@ -80,15 +86,28 @@ from app.schemas.project import (
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
     test_connection()
     yield
 
+configure_logging()
+
+configure_logging()
 
 app = FastAPI(
     title="PMO AI Assistant API",
     version="1.0.0",
     lifespan=lifespan,
 )
+
+app.middleware("http")(
+    request_logging_middleware
+)
+
+register_exception_handlers(app)
+
+app.include_router(auth_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
@@ -137,6 +156,7 @@ def root():
 def create_new_project(
     project: ProjectCreate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return create_project(
         db,
@@ -150,6 +170,7 @@ def create_new_project(
 )
 def read_projects(
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     return get_projects(db)
 
@@ -161,6 +182,7 @@ def read_projects(
 def read_project(
     project_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     project = get_project(
         db,
@@ -184,6 +206,7 @@ def update_existing_project(
     project_id: int,
     project: ProjectUpdate,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     updated_project = update_project(
         db,
@@ -204,6 +227,7 @@ def update_existing_project(
 def remove_project(
     project_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     deleted_project = delete_project(
         db,
@@ -233,6 +257,7 @@ async def upload_document(
     project_id: int,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     project = get_project(
         db,
@@ -304,6 +329,7 @@ async def upload_document(
 def list_project_documents(
     project_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     project = get_project(
         db,
@@ -330,6 +356,7 @@ def list_project_documents(
 def download_document(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = get_document(
         db,
@@ -365,6 +392,7 @@ def download_document(
 def remove_document(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = get_document(
         db,
@@ -402,6 +430,7 @@ def analyze_document(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -513,6 +542,7 @@ def analyze_document(
 def get_document_analysis(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -564,6 +594,7 @@ def create_project_charter(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -682,6 +713,7 @@ def create_project_charter(
 def get_project_charter(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -760,6 +792,7 @@ def get_project_charter(
 def download_project_charter_docx(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -852,6 +885,7 @@ def create_wbs_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1065,6 +1099,7 @@ def _prepare_wbs_for_response(
 def get_wbs_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1145,6 +1180,7 @@ def get_wbs_artifact(
 def download_wbs_docx(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1366,6 +1402,7 @@ def create_requirements_register_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1497,6 +1534,7 @@ def create_requirements_register_artifact(
 def get_requirements_register_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1582,6 +1620,7 @@ def get_requirements_register_artifact(
 def download_requirements_register_excel(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -1877,6 +1916,7 @@ def create_raid_risk_register_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2008,6 +2048,7 @@ def create_raid_risk_register_artifact(
 def get_raid_risk_register_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2091,6 +2132,7 @@ def get_raid_risk_register_artifact(
 def download_raid_risk_register_excel(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2274,6 +2316,7 @@ def create_stakeholder_register_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2405,6 +2448,7 @@ def create_stakeholder_register_artifact(
 def get_stakeholder_register_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2489,6 +2533,7 @@ def get_stakeholder_register_artifact(
 def download_stakeholder_register_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2716,6 +2761,7 @@ def create_raci_matrix_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2896,6 +2942,7 @@ def create_raci_matrix_artifact(
 def get_raci_matrix_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -2979,6 +3026,7 @@ def get_raci_matrix_artifact(
 def download_raci_matrix_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -3280,6 +3328,7 @@ def create_project_timeline_artifact(
     document_id: int,
     force: bool = False,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -3458,6 +3507,7 @@ def create_project_timeline_artifact(
 def get_project_timeline_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)
@@ -3543,6 +3593,7 @@ def get_project_timeline_artifact(
 def download_project_timeline_artifact(
     document_id: int,
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     document = (
         db.query(UploadedDocument)

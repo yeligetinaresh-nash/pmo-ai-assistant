@@ -250,11 +250,11 @@ If it does not exist:
 
 ```text
 Display cost warning
-        |
-        v
+        |
+        v
 User confirmation
-        |
-        v
+        |
+        v
 OpenAI API call
 ```
 
@@ -279,6 +279,8 @@ This provides better API-cost control during development and production use.
 - SQLAlchemy
 - Uvicorn
 - Pydantic
+- PyJWT
+- pwdlib / Argon2
 
 ### Database
 
@@ -323,49 +325,49 @@ This provides better API-cost control during development and production use.
 ## High-Level Architecture
 
 ```text
-                        +----------------------+
-                        |        User          |
-                        +----------+-----------+
-                                   |
-                                   v
-                        +----------------------+
-                        |   React Frontend     |
-                        |      Vite UI         |
-                        +----------+-----------+
-                                   |
-                              REST API
-                                   |
-                                   v
-                        +----------------------+
-                        |   FastAPI Backend    |
-                        +----------+-----------+
-                                   |
-               +-------------------+-------------------+
-               |                                       |
-               v                                       v
-     +----------------------+                +----------------------+
-     |    PostgreSQL DB     |                |      OpenAI API      |
-     |                      |                |                      |
-     | Projects             |                | BRD Analysis         |
-     | Documents            |                | Artifact Generation  |
-     | Analysis             |                +----------+-----------+
-     | Artifacts            |                           |
-     +----------+-----------+                           |
-                |                                       |
-                +-------------------+-------------------+
-                                    |
-                                    v
-                         +----------------------+
-                         | PMO Artifact Engine  |
-                         +----------+-----------+
-                                    |
-                     +--------------+--------------+
-                     |                             |
-                     v                             v
-              +-------------+              +-------------+
-              |    DOCX     |              |    XLSX     |
-              |   Export    |              |   Export    |
-              +-------------+              +-------------+
+                        +----------------------+
+                        |        User          |
+                        +----------+-----------+
+                                   |
+                                   v
+                        +----------------------+
+                        |   React Frontend     |
+                        |      Vite UI         |
+                        +----------+-----------+
+                                   |
+                              REST API
+                                   |
+                                   v
+                        +----------------------+
+                        |   FastAPI Backend    |
+                        +----------+-----------+
+                                   |
+               +-------------------+-------------------+
+               |                                       |
+               v                                       v
+     +----------------------+                +----------------------+
+     |    PostgreSQL DB     |                |      OpenAI API      |
+     |                      |                |                      |
+     | Projects             |                | BRD Analysis         |
+     | Documents            |                | Artifact Generation  |
+     | Analysis             |                +----------+-----------+
+     | Artifacts            |                           |
+     +----------+-----------+                           |
+                |                                       |
+                +-------------------+-------------------+
+                                    |
+                                    v
+                         +----------------------+
+                         | PMO Artifact Engine  |
+                         +----------+-----------+
+                                    |
+                     +--------------+--------------+
+                     |                             |
+                     v                             v
+              +-------------+              +-------------+
+              |    DOCX     |              |    XLSX     |
+              |   Export    |              |   Export    |
+              +-------------+              +-------------+
 ```
 
 ---
@@ -374,55 +376,55 @@ This provides better API-cost control during development and production use.
 
 ```text
 Create Project
-      |
-      v
+      |
+      v
 Upload BRD / Project Document
-      |
-      v
+      |
+      v
 Extract Document Content
-      |
-      v
+      |
+      v
 Check Existing BRD Analysis
-      |
-      +-----------------------------+
-      |                             |
-      v                             v
-Analysis Exists               Analysis Missing
-      |                             |
-      v                             v
-Load Cached Result            Show Cost Warning
-                                    |
-                                    v
-                              User Confirmation
-                                    |
-                                    v
-                               OpenAI API
-                                    |
-                                    v
-                              Save Analysis
-                                    |
-                                    v
-                         Generate PMO Artifacts
-                                    |
-                                    v
-                         Check Artifact Cache
-                                    |
-                  +-----------------+----------------+
-                  |                                  |
-                  v                                  v
-          Artifact Exists                     Artifact Missing
-                  |                                  |
-                  v                                  v
-           Load Cached Result                 User Confirmation
-                                                     |
-                                                     v
-                                                 OpenAI API
-                                                     |
-                                                     v
-                                              Save Artifact
-                                                     |
-                                                     v
-                                          Download DOCX / XLSX
+      |
+      +-----------------------------+
+      |                             |
+      v                             v
+Analysis Exists               Analysis Missing
+      |                             |
+      v                             v
+Load Cached Result            Show Cost Warning
+                                    |
+                                    v
+                              User Confirmation
+                                    |
+                                    v
+                               OpenAI API
+                                    |
+                                    v
+                              Save Analysis
+                                    |
+                                    v
+                         Generate PMO Artifacts
+                                    |
+                                    v
+                         Check Artifact Cache
+                                    |
+                  +-----------------+----------------+
+                  |                                  |
+                  v                                  v
+          Artifact Exists                     Artifact Missing
+                  |                                  |
+                  v                                  v
+           Load Cached Result                 User Confirmation
+                                                     |
+                                                     v
+                                                 OpenAI API
+                                                     |
+                                                     v
+                                              Save Artifact
+                                                     |
+                                                     v
+                                          Download DOCX / XLSX
 ```
 
 ---
@@ -433,27 +435,27 @@ Load Cached Result            Show Cost Warning
 pmo-ai-assistant/
 │
 ├── backend/
-│   ├── app/
-│   │   ├── core/
-│   │   ├── database/
-│   │   ├── models/
-│   │   ├── routers/
-│   │   └── main.py
-│   ├── alembic/
-│   ├── tests/
-│   ├── requirements.txt
-│   └── .env.example
+│   ├── app/
+│   │   ├── core/
+│   │   ├── database/
+│   │   ├── models/
+│   │   ├── routers/
+│   │   └── main.py
+│   ├── alembic/
+│   ├── tests/
+│   ├── requirements.txt
+│   └── .env.example
 │
 ├── frontend/
-│   ├── public/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── App.css
-│   │   ├── index.css
-│   │   └── main.jsx
-│   ├── package.json
-│   ├── package-lock.json
-│   └── vite.config.js
+│   ├── public/
+│   ├── src/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── index.css
+│   │   └── main.jsx
+│   ├── package.json
+│   ├── package-lock.json
+│   └── vite.config.js
 │
 ├── docs/
 ├── templates/
@@ -549,6 +551,8 @@ Example:
 DATABASE_URL=postgresql://pmo_user:pmo_password@localhost:5432/pmo_db
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-5-mini
+JWT_SECRET_KEY=replace_with_a_long_random_secret
+ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
 
 Do not commit the real `.env` file or API key to GitHub.
@@ -572,19 +576,19 @@ alembic upgrade head
 ```powershell
 cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
-uvicorn app.main:app --reload
+python -m uvicorn app.main --host 127.0.0.1 --port 8001
 ```
 
 Backend URL:
 
 ```text
-http://127.0.0.1:8000
+http://127.0.0.1:8001
 ```
 
 Swagger API documentation:
 
 ```text
-http://127.0.0.1:8000/docs
+http://127.0.0.1:8001/docs
 ```
 
 ---
@@ -621,7 +625,7 @@ docker compose up -d
 ```powershell
 cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
-uvicorn app.main:app --reload
+python -m uvicorn app.main --host 127.0.0.1 --port 8001
 ```
 
 ### 3. Start Frontend
@@ -750,6 +754,11 @@ The backend includes automated tests covering:
 - Artifact endpoints
 - Cached artifact retrieval
 - Artifact downloads
+- JWT authentication and protected-route behavior
+- Registration and login
+- Authenticated project access
+- Request ID generation and preservation
+- Observability middleware
 
 Run tests:
 
@@ -762,7 +771,7 @@ pytest -q
 Latest verified result:
 
 ```text
-31 passed
+46 passed
 ```
 
 ---
@@ -839,6 +848,15 @@ The current MVP includes:
 - Frontend production build
 - Dockerized PostgreSQL
 - Git/GitHub version control
+- JWT authentication
+- Password hashing
+- Protected project/document/artifact APIs
+- Authenticated artifact downloads
+- Request logging and X-Request-ID tracing
+- Centralized unexpected-error handling
+- 46 passing backend automated tests
+- Local operational runbook
+- Demo guide
 
 ---
 
@@ -870,6 +888,14 @@ Potential future enhancements include:
 - Retrieval-Augmented Generation (RAG)
 - Project knowledge assistant
 - Agentic AI workflows
+
+---
+
+## Operational Documentation
+
+- docs/RUNBOOK.md - local startup, shutdown, validation, security, and troubleshooting instructions
+- docs/DEMO_GUIDE.md - recommended portfolio/interview demonstration sequence
+- docs/PMO_AI_Assistant_Architecture.md - architecture documentation
 
 ---
 
@@ -925,10 +951,9 @@ Stage: Portfolio MVP
 Current development focus:
 
 ```text
-Documentation
-Architecture
-Portfolio polish
 Deployment readiness
+Final portfolio polish
+Cloud deployment planning
 ```
 
 ---

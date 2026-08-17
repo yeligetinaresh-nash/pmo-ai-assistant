@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import "./App.css";
 
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://127.0.0.1:8001";
 
 const artifacts = [
   {
@@ -42,6 +42,92 @@ const artifacts = [
 ];
 
 function App() {
+  // Authentication
+  const [token, setToken] = useState(
+    () => localStorage.getItem("pmo_ai_token") || ""
+  );
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginError, setLoginError] = useState("");
+
+  const handleLogout = () => {
+    localStorage.removeItem("pmo_ai_token");
+    setToken("");
+    setProjects([]);
+    setSelectedProject(null);
+    setSelectedDocument(null);
+    setDocuments([]);
+    setError("");
+  };
+
+  const authFetch = async (url, options = {}) => {
+    const headers = new Headers(options.headers || {});
+
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+
+    const response = await fetch(url, {
+      ...options,
+      headers,
+    });
+
+    if (response.status === 401 && token) {
+      localStorage.removeItem("pmo_ai_token");
+      setToken("");
+    }
+
+    return response;
+  };
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+
+    if (!loginEmail.trim() || !loginPassword) {
+      setLoginError("Email and password are required.");
+      return;
+    }
+
+    setLoginLoading(true);
+    setLoginError("");
+
+    try {
+      const body = new URLSearchParams();
+      body.append("username", loginEmail.trim());
+      body.append("password", loginPassword);
+
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(
+          errorData?.detail || "Invalid email or password"
+        );
+      }
+
+      const data = await response.json();
+
+      localStorage.setItem(
+        "pmo_ai_token",
+        data.access_token
+      );
+
+      setToken(data.access_token);
+      setLoginPassword("");
+    } catch (err) {
+      setLoginError(err.message);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -96,7 +182,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/projects`);
+      const response = await authFetch(`${API_URL}/projects`);
 
       if (!response.ok) {
         throw new Error("Failed to load projects");
@@ -112,8 +198,13 @@ function App() {
   };
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    if (token) {
+      loadProjects();
+    } else {
+      setLoading(false);
+      setProjects([]);
+    }
+  }, [token]);
 
   // --------------------------------------------------
   // ANALYSIS STATUS
@@ -123,7 +214,7 @@ function App() {
     setAnalysisStatus("checking");
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/documents/${documentId}/analysis`
       );
 
@@ -159,7 +250,7 @@ function App() {
     const results = await Promise.all(
       artifacts.map(async (artifact) => {
         try {
-          const response = await fetch(
+          const response = await authFetch(
             `${API_URL}/documents/${documentId}/artifacts/${artifact.path}`
           );
 
@@ -215,7 +306,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch(`${API_URL}/projects`, {
+      const response = await authFetch(`${API_URL}/projects`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -296,7 +387,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/projects/${editingProject.id}`,
         {
           method: "PUT",
@@ -371,7 +462,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/projects/${project.id}`,
         {
           method: "DELETE",
@@ -435,7 +526,7 @@ function App() {
     setArtifactStatuses({});
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/projects/${project.id}/documents`
       );
 
@@ -493,7 +584,7 @@ function App() {
     setArtifactMessage("");
 
     try {
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/documents/${document.id}`,
         {
           method: "DELETE",
@@ -600,7 +691,7 @@ function App() {
         uploadFile
       );
 
-      const response = await fetch(
+      const response = await authFetch(
         `${API_URL}/projects/${selectedProject.id}/documents`,
         {
           method: "POST",
@@ -663,7 +754,7 @@ function App() {
 
     try {
       const cachedResponse =
-        await fetch(
+        await authFetch(
           `${API_URL}/documents/${selectedDocument.id}/analysis`
         );
 
@@ -710,7 +801,7 @@ function App() {
       }
 
       const response =
-        await fetch(
+        await authFetch(
           `${API_URL}/documents/${selectedDocument.id}/analyze?force=false`,
           {
             method: "POST",
@@ -780,7 +871,7 @@ function App() {
 
     try {
       const cachedResponse =
-        await fetch(
+        await authFetch(
           `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}`
         );
 
@@ -838,7 +929,7 @@ function App() {
       }
 
       const response =
-        await fetch(
+        await authFetch(
           `${API_URL}/documents/${selectedDocument.id}/artifacts/${artifactPath}?force=false`,
           {
             method: "POST",
@@ -913,12 +1004,57 @@ function App() {
   // DOWNLOAD
   // --------------------------------------------------
 
+  const downloadAuthenticatedFile = async (
+    url,
+    fallbackFilename
+  ) => {
+    try {
+      setError("");
+
+      const response = await authFetch(url);
+
+      if (!response.ok) {
+        const errorData = await response
+          .json()
+          .catch(() => null);
+
+        throw new Error(
+          errorData?.detail || "Download failed"
+        );
+      }
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      const contentDisposition =
+        response.headers.get("content-disposition") || "";
+
+      const filenameMatch = contentDisposition.match(
+        /filename="?([^"]+)"?/i
+      );
+
+      const filename =
+        filenameMatch?.[1] || fallbackFilename;
+
+      const link = document.createElement("a");
+      link.href = objectUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      URL.revokeObjectURL(objectUrl);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const handleDownloadDocument = (
     documentId
   ) => {
-    window.open(
+    downloadAuthenticatedFile(
       `${API_URL}/documents/${documentId}/download`,
-      "_blank"
+      `document_${documentId}`
     );
   };
 
@@ -926,9 +1062,9 @@ function App() {
     documentId,
     artifactPath
   ) => {
-    window.open(
+    downloadAuthenticatedFile(
       `${API_URL}/documents/${documentId}/artifacts/${artifactPath}/download`,
-      "_blank"
+      `${artifactPath}_${documentId}`
     );
   };
 
@@ -1039,6 +1175,89 @@ function App() {
     projects.length;
 
   // ==================================================
+  // LOGIN
+  // ==================================================
+
+  if (!token) {
+    return (
+      <div className="app">
+        <main className="main-content">
+          <section
+            className="create-project-panel"
+            style={{
+              maxWidth: "460px",
+              margin: "80px auto",
+            }}
+          >
+            <div className="form-header">
+              <div>
+                <h1>PMO AI Assistant</h1>
+                <p>
+                  Sign in to access your project management workspace.
+                </p>
+              </div>
+            </div>
+
+            <form onSubmit={handleLogin}>
+              <div className="form-group">
+                <label htmlFor="loginEmail">
+                  Email
+                </label>
+
+                <input
+                  id="loginEmail"
+                  type="email"
+                  value={loginEmail}
+                  onChange={(event) =>
+                    setLoginEmail(event.target.value)
+                  }
+                  placeholder="Enter your email"
+                  autoComplete="username"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="loginPassword">
+                  Password
+                </label>
+
+                <input
+                  id="loginPassword"
+                  type="password"
+                  value={loginPassword}
+                  onChange={(event) =>
+                    setLoginPassword(event.target.value)
+                  }
+                  placeholder="Enter your password"
+                  autoComplete="current-password"
+                />
+              </div>
+
+              {loginError && (
+                <div className="error-message">
+                  {loginError}
+                </div>
+              )}
+
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary-button"
+                  disabled={loginLoading}
+                >
+                  {loginLoading
+                    ? "Signing in..."
+                    : "Sign In"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </main>
+      </div>
+    );
+  }
+
+  // ==================================================
   // PROJECT WORKSPACE
   // ==================================================
 
@@ -1139,10 +1358,20 @@ function App() {
               </p>
             </div>
 
-            <span className="badge">
-              {selectedProject.status ||
-                "Draft"}
-            </span>
+            <div className="form-actions">
+              <span className="badge">
+                {selectedProject.status ||
+                  "Draft"}
+              </span>
+
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </div>
           </header>
 
           {error && (
@@ -1633,25 +1862,35 @@ function App() {
             </p>
           </div>
 
-          <button
-            type="button"
-            className="primary-button"
-            onClick={() => {
-              setShowForm(
-                true
-              );
+          <div className="form-actions">
+            <button
+              type="button"
+              className="primary-button"
+              onClick={() => {
+                setShowForm(
+                  true
+                );
 
-              setEditingProject(
-                null
-              );
+                setEditingProject(
+                  null
+                );
 
-              setError(
-                ""
-              );
-            }}
-          >
-            + New Project
-          </button>
+                setError(
+                  ""
+                );
+              }}
+            >
+              + New Project
+            </button>
+
+            <button
+              type="button"
+              className="secondary-button"
+              onClick={handleLogout}
+            >
+              Logout
+            </button>
+          </div>
         </header>
 
         <section className="stats-grid">
