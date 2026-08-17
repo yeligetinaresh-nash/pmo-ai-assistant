@@ -1289,7 +1289,7 @@ def _prepare_requirements_register_for_response(
         )
 
         if requirement_id == "BR-11":
-            item["status"] = "Partially Complete"
+            item["status"] = "Complete"
 
             item["description"] = (
                 "Generate WBS, RAID Log, Risk Register, "
@@ -1298,23 +1298,23 @@ def _prepare_requirements_register_for_response(
             )
 
             item["notes"] = (
-                "Partially implemented. WBS generation, "
-                "persistence, cached retrieval, normalization, "
-                "and DOCX export are complete. Requirements "
-                "Register generation, persistence, and cached "
-                "retrieval are complete. RAID Log, Risk Register, "
-                "Stakeholder Register, RACI, Timeline, and their "
-                "applicable exports remain planned."
+                "Implemented. WBS, Requirements Register, "
+                "RAID & Risk Register, Stakeholder Register, "
+                "RACI Matrix, and Project Timeline generation "
+                "are complete, including persistence, cached "
+                "retrieval, normalization, and applicable "
+                "DOCX/XLSX exports."
             )
 
         elif requirement_id == "NFR-02":
-            item["status"] = "Partially Complete"
+            item["status"] = "Complete"
 
             item["notes"] = (
-                "SQLAlchemy commit and rollback handling exists "
-                "for implemented write operations. Dedicated "
-                "transactional integration tests and verification "
-                "of every multi-step operation remain planned."
+                "SQLAlchemy commit and rollback handling is "
+                "implemented for application write operations. "
+                "Automated API and integration-oriented tests "
+                "validate core project, authentication, document, "
+                "artifact, and persistence workflows."
             )
 
         elif requirement_id == "NFR-05":
@@ -1331,10 +1331,11 @@ def _prepare_requirements_register_for_response(
             item["status"] = "Partially Complete"
 
             item["notes"] = (
-                "Basic application and server logging is available. "
-                "Structured request logging, model-usage metrics, "
-                "latency measurement, consistent secret redaction, "
-                "and observability testing remain planned."
+                "Structured request logging, request IDs, response "
+                "status logging, latency measurement, centralized "
+                "unexpected-error handling, and observability tests "
+                "are implemented. Model-usage metrics and formal "
+                "secret-redaction controls remain future enhancements."
             )
 
     complete_count = sum(
@@ -1775,24 +1776,24 @@ def _prepare_raid_risk_register_for_response(
             )
 
         elif item_id == "I-001":
-            item["status"] = "In Progress"
+            item["status"] = "Resolved"
             item["title"] = (
-                "Remaining PMO artifacts are partially implemented"
+                "PMO artifact implementation completed"
             )
             item["description"] = (
-                "WBS, Requirements Register, RAID Log, and Risk "
-                "Register generation are implemented. Stakeholder "
-                "Register, RACI Matrix, Timeline, and their "
-                "applicable exports remain planned."
+                "WBS, Requirements Register, RAID & Risk Register, "
+                "Stakeholder Register, RACI Matrix, and Project "
+                "Timeline generation are implemented, including "
+                "persistence, cached retrieval, and applicable exports."
             )
             item["response_or_action"] = (
-                "Continue incremental artifact delivery. Implement "
-                "Stakeholder Register next, followed by RACI Matrix "
-                "and Timeline."
+                "No further core artifact implementation is required "
+                "for the current MVP. Remaining work is limited to "
+                "deployment readiness and final portfolio polish."
             )
             item["notes"] = (
-                "This issue now represents the remaining PMO "
-                "artifact backlog rather than all artifacts."
+                "The previously identified PMO artifact backlog has "
+                "been completed for the current MVP scope."
             )
 
         elif item_id == "I-003":
