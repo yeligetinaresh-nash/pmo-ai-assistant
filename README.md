@@ -568,12 +568,13 @@ backend/.env
 Example:
 
 ```env
-DATABASE_URL=postgresql://pmo_user:pmo_password@localhost:5432/pmo_db
+DATABASE_URL=postgresql://pmo_user:change_me@localhost:5432/pmo_db
 OPENAI_API_KEY=your_openai_api_key_here
 OPENAI_MODEL=gpt-5-mini
 JWT_SECRET_KEY=replace_with_a_long_random_secret
 ACCESS_TOKEN_EXPIRE_MINUTES=60
 ```
+These values are local-development examples only. Use secure credentials and secret management for production deployments.
 
 Do not commit the real `.env` file or API key to GitHub.
 
@@ -884,8 +885,6 @@ The current MVP includes:
 
 Potential future enhancements include:
 
-- User authentication
-- JWT security
 - Role-based access control
 - Multi-user support
 - Cloud deployment
@@ -971,9 +970,9 @@ Stage: Portfolio MVP
 Current development focus:
 
 ```text
-Deployment readiness
-Final portfolio polish
 Cloud deployment planning
+Enhanced analytics
+RAG and agentic workflow exploration
 ```
 
 ---
