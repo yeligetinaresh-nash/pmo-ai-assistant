@@ -22,7 +22,7 @@ The system is designed with a cost-safety approach so that existing AI outputs a
 ## Demo Preview
 
 ### Login
-![Login Screen](docs/screenshots/01_login.png)
+![Login Screen](docs/screenshots/01_login_v2.png)
 
 ### Project Dashboard
 ![Project Dashboard](docs/screenshots/02_dashboard.png)
