@@ -1180,82 +1180,71 @@ function App() {
 
   if (!token) {
     return (
-      <div className="app">
-        <main className="main-content">
-          <section
-            className="create-project-panel"
-            style={{
-              maxWidth: "460px",
-              margin: "80px auto",
-            }}
-          >
-            <div className="form-header">
-              <div>
-                <h1>PMO AI Assistant</h1>
-                <p>
-                  Sign in to access your project management workspace.
-                </p>
-              </div>
+      <div className="login-page">
+        <section className="login-card">
+          <div className="login-brand">
+            <h1>PMO AI Assistant</h1>
+            <p>
+              Sign in to your AI-powered project management workspace.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin}>
+            <div className="form-group">
+              <label htmlFor="loginEmail">
+                Email
+              </label>
+
+              <input
+                id="loginEmail"
+                type="email"
+                value={loginEmail}
+                onChange={(event) =>
+                  setLoginEmail(event.target.value)
+                }
+                placeholder="Enter your email"
+                autoComplete="username"
+              />
             </div>
 
-            <form onSubmit={handleLogin}>
-              <div className="form-group">
-                <label htmlFor="loginEmail">
-                  Email
-                </label>
+            <div className="form-group">
+              <label htmlFor="loginPassword">
+                Password
+              </label>
 
-                <input
-                  id="loginEmail"
-                  type="email"
-                  value={loginEmail}
-                  onChange={(event) =>
-                    setLoginEmail(event.target.value)
-                  }
-                  placeholder="Enter your email"
-                  autoComplete="username"
-                />
+              <input
+                id="loginPassword"
+                type="password"
+                value={loginPassword}
+                onChange={(event) =>
+                  setLoginPassword(event.target.value)
+                }
+                placeholder="Enter your password"
+                autoComplete="current-password"
+              />
+            </div>
+
+            {loginError && (
+              <div className="error-message">
+                {loginError}
               </div>
+            )}
 
-              <div className="form-group">
-                <label htmlFor="loginPassword">
-                  Password
-                </label>
-
-                <input
-                  id="loginPassword"
-                  type="password"
-                  value={loginPassword}
-                  onChange={(event) =>
-                    setLoginPassword(event.target.value)
-                  }
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                />
-              </div>
-
-              {loginError && (
-                <div className="error-message">
-                  {loginError}
-                </div>
-              )}
-
-              <div className="form-actions">
-                <button
-                  type="submit"
-                  className="primary-button"
-                  disabled={loginLoading}
-                >
-                  {loginLoading
-                    ? "Signing in..."
-                    : "Sign In"}
-                </button>
-              </div>
-            </form>
-          </section>
-        </main>
+            <button
+              type="submit"
+              className="primary-button"
+              disabled={loginLoading}
+            >
+              {loginLoading
+                ? "Signing in..."
+                : "Sign In"}
+            </button>
+          </form>
+        </section>
       </div>
     );
   }
+
 
   // ==================================================
   // PROJECT WORKSPACE

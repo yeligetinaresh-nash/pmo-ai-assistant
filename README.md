@@ -511,7 +511,7 @@ Optional:
 From the project root:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose up -d
 ```
 
@@ -534,7 +534,7 @@ pmo-postgres
 Move to the backend folder:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 ```
 
 Create a Python virtual environment:
@@ -584,7 +584,7 @@ Do not commit the real `.env` file or API key to GitHub.
 Apply the latest database migrations:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 alembic upgrade head
 ```
@@ -594,7 +594,7 @@ alembic upgrade head
 ## Start Backend
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m uvicorn app.main --host 127.0.0.1 --port 8001
 ```
@@ -618,7 +618,7 @@ http://127.0.0.1:8001/docs
 Open another PowerShell terminal:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\frontend
+cd pmo-ai-assistant\frontend
 npm install
 npm run dev
 ```
@@ -636,14 +636,14 @@ http://localhost:5173/
 ### 1. Start PostgreSQL
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose up -d
 ```
 
 ### 2. Start Backend
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m uvicorn app.main --host 127.0.0.1 --port 8001
 ```
@@ -653,7 +653,7 @@ python -m uvicorn app.main --host 127.0.0.1 --port 8001
 Open another terminal:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\frontend
+cd pmo-ai-assistant\frontend
 npm run dev
 ```
 
@@ -783,7 +783,7 @@ The backend includes automated tests covering:
 Run tests:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 pytest -q
 ```
@@ -801,7 +801,7 @@ Latest verified result:
 Run:
 
 ```powershell
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\frontend
+cd pmo-ai-assistant\frontend
 npm run build
 ```
 

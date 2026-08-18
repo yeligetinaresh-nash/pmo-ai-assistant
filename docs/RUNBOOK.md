@@ -84,7 +84,7 @@ Do not commit or share the real backend/.env file.
 
 Make sure Docker Desktop is running.
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose up -d
 docker ps
 
@@ -98,7 +98,7 @@ PostgreSQL runs in the background.
 
 Use Terminal 1.
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 
@@ -122,7 +122,7 @@ Keep this terminal running.
 
 Use Terminal 2.
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\frontend
+cd pmo-ai-assistant\frontend
 npm run dev
 
 Frontend:
@@ -141,7 +141,7 @@ Docker = Running in background
 
 Open a temporary terminal when needed.
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m pytest tests -v
 
@@ -325,7 +325,7 @@ cloud IAM
 
 Backend does not start
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r requirements.txt
 
@@ -335,7 +335,7 @@ docker ps
 
 If PostgreSQL is not running:
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose up -d
 
 Check:
@@ -397,7 +397,7 @@ Ctrl + C
 
 Stop PostgreSQL:
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose down
 
 Do not remove the PostgreSQL volume unless you intentionally want to reset the database.

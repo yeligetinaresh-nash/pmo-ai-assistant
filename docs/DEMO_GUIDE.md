@@ -30,7 +30,7 @@ Backend automated tests are passing
 
 3. Start Database
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant
+cd pmo-ai-assistant
 docker compose up -d
 docker ps
 
@@ -42,7 +42,7 @@ pmo-postgres
 
 Use Terminal 1:
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m uvicorn app.main:app --host 127.0.0.1 --port 8001
 
@@ -58,7 +58,7 @@ http://127.0.0.1:8001/docs
 
 Use Terminal 2:
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\frontend
+cd pmo-ai-assistant\frontend
 npm run dev
 
 Frontend:
@@ -281,7 +281,7 @@ The request ID allows an API request to be correlated with backend logs during t
 
 If required, open a temporary terminal and run:
 
-cd C:\Users\DELL\Desktop\pmo-ai-assistant\backend
+cd pmo-ai-assistant\backend
 .\.venv\Scripts\Activate.ps1
 python -m pytest tests -v
 

@@ -297,11 +297,17 @@ button {
   margin-bottom: 22px;
 }
 
+.section-header > div,
+.form-header > div {
+  width: 100%;
+}
+
 .section-header h2,
 .form-header h2 {
   margin: 0 0 6px;
   color: #111827;
   font-size: 20px;
+  line-height: 1.3;
 }
 
 .section-header p,
@@ -309,6 +315,7 @@ button {
   margin: 0;
   color: #6b7280;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 /* ------------------------------------------------ */
@@ -365,6 +372,7 @@ button {
 /* ------------------------------------------------ */
 
 .project-card {
+  min-height: 112px;
   margin-bottom: 14px;
   padding: 20px;
   border: 1px solid #e5e7eb;
@@ -383,12 +391,12 @@ button {
 .project-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 20px;
 }
 
 .project-header h3 {
-  margin: 10px 0 5px;
+  margin: 8px 0 5px;
   color: #111827;
   font-size: 17px;
 }
@@ -398,7 +406,16 @@ button {
   color: #6b7280;
   font-size: 14px;
 }
+.project-header > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
 
+.project-header .form-actions {
+  flex-shrink: 0;
+  align-items: flex-start;
+  margin-top: 0;
+}
 /* ------------------------------------------------ */
 /* UPLOAD PANEL */
 /* ------------------------------------------------ */
@@ -463,6 +480,9 @@ button {
 }
 
 .document-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 18px;
   border: 1px solid #e5e7eb;
   border-radius: 10px;
@@ -494,10 +514,12 @@ button {
 }
 
 .document-card h3 {
+  min-height: 44px;
   margin: 0 0 10px;
   overflow-wrap: anywhere;
   color: #111827;
   font-size: 15px;
+  line-height: 1.45;
 }
 
 .document-card p {
@@ -508,8 +530,11 @@ button {
 
 .document-actions {
   display: flex;
-  gap: 9px;
-  margin-top: 16px;
+  flex-wrap: wrap;
+  gap: 10px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 16px;
 }
 
 /* ------------------------------------------------ */
@@ -530,11 +555,12 @@ button {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 245px;
-  padding: 20px;
+  min-height: 270px;
+  padding: 22px;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   background: #ffffff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
 .artifact-card > span {
@@ -546,9 +572,10 @@ button {
 }
 
 .artifact-card h3 {
-  margin: 7px 0;
+  margin: 10px 0 8px;
   color: #111827;
   font-size: 16px;
+  line-height: 1.35;
 }
 
 .artifact-card p {
@@ -556,7 +583,7 @@ button {
   margin: 0;
   color: #6b7280;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.6;
 }
 
 .artifact-actions {
@@ -658,10 +685,19 @@ button {
 
 .analysis-actions {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 10px;
+}
+.artifact-workspace .section-header {
+  justify-content: center;
+  text-align: center;
+}
+
+.artifact-workspace .section-header > div {
+  width: 100%;
 }
 
 .analysis-success {
@@ -837,4 +873,61 @@ button {
 .document-actions button {
   flex: 1 1 100px;
   min-width: 0;
+}
+/* ------------------------------------------------ */
+/* LOGIN PAGE */
+/* ------------------------------------------------ */
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #f5f7fb;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 36px 32px 30px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.login-brand {
+  margin-bottom: 28px;
+  text-align: center;
+}
+
+.login-brand h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.6px;
+}
+
+.login-brand p {
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.login-card .form-group {
+  margin-bottom: 18px;
+}
+
+.login-card .form-group label {
+  text-align: left;
+}
+
+.login-card .primary-button {
+  width: 100%;
+  margin-top: 4px;
+  padding: 11px 16px;
 }
