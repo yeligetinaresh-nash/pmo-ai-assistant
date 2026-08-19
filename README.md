@@ -505,7 +505,7 @@ Optional:
 - Postman
 
 ---
-
+<!--
 ## PostgreSQL Setup
 
 From the project root:
@@ -665,7 +665,7 @@ http://localhost:5173/
 ```
 
 ---
-
+-->
 ## Using PMO AI Assistant
 
 ### Create a Project
@@ -780,7 +780,7 @@ The backend includes automated tests covering:
 - Authenticated project access
 - Request ID generation and preservation
 - Observability middleware
-
+<!--
 Run tests:
 
 ```powershell
@@ -841,7 +841,7 @@ generated/
 ```
 
 ---
-
+-->
 ## Current MVP Capabilities
 
 The current MVP includes:
@@ -909,13 +909,13 @@ Potential future enhancements include:
 - Agentic AI workflows
 
 ---
-
+<!--
 ## Operational Documentation
 
 - docs/RUNBOOK.md - local startup, shutdown, validation, security, and troubleshooting instructions
 - docs/DEMO_GUIDE.md - recommended portfolio/interview demonstration sequence
 - docs/PMO_AI_Assistant_Architecture.md - architecture documentation
-
+-->
 ---
 
 ## Business Value
